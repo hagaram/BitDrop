@@ -135,14 +135,14 @@ configure_torrent_client () {
     done
   fi
   
-  if [ "$basic_auth_copy_credentials" == "yes" ]; then
-    basicauth_username=$username
-    basicauth_password=$password
-  else
+  if [ "$basic_auth" == "yes" ] && [ "$basic_auth_copy_credentials" == "no" ]; then
     printf "\n%bSpecify username for Basic Auth%b:\n" "${BOLD}" "${NC}"
     read basicauth_username
     printf "\n%bSpecify password for Basic Auth%b:\n" "${BOLD}" "${NC}"
     read -s basicauth_password
+  else
+    basicauth_username=$username
+    basicauth_password=$password
   fi
 
   printf "\n%bCreating adder script in %s/adder.sh%b\n" "${BOLD}" "${install_path}" "${NC}"

@@ -1,7 +1,25 @@
   if [ ! -z "$password" ] ; then
     cat <<EOF >> ${install_path}/adder.sh
-sid=\$(curl -s -i -H "Content-Type: application/json" -H "Accept: application/json" -X POST -d "{\"method\": \"auth.login\", \"params\": [\"\${PASSWORD}\"], \"id\": 1}" \${URL}/json | awk '/Set-Cookie/ {print substr(\$2, 1, length(\$2)-1)}')
-curl -s --cookie "\${sid}"  -i -H "Content-Type: application/json" -H "Accept: application/json" -X POST -d  "{\"method\":\"core.add_torrent_magnet\",\"params\":[\"\${TORRENT}\",{}],\"id\":1}" \${URL}/json
+
+
+if [[ \$TORRENT == *.torrent ]]; then
+  torrent_name="\$(basename \$TORRENT)"
+  TORRENT=\$(base64 -w 0 "\$TORRENT")
+  torrent_data="{
+          \"method\":\"core.add_torrent_file\",
+          \"params\": [\"\$torrent_name\", \"\$TORRENT\", {}],
+          \"id\":2
+          }"
+else
+  torrent_data="{
+          \"method\":\"core.add_torrent_magnet\",
+          \"params\":[\"\${TORRENT}\", {}],
+          \"id\":1
+         }"
+fi
+
+sid=\$(curl -s -i "\${ARGS[@]}" -H "Content-Type: application/json" -H "Accept: application/json" -X POST -d "{\"method\": \"auth.login\", \"params\": [\"\${PASSWORD}\"], \"id\": 1}" \${URL}/json | awk '/Set-Cookie/ {print substr(\$2, 1, length(\$2)-1)}')
+curl -s --cookie "\${sid}" "\${ARGS[@]}" -i -H "Content-Type: application/json" -H "Accept: application/json" -X POST -d  "\$torrent_data" \${URL}/json
 EOF
   else
     printf "${RED}You didn't provide password, installation FAILED${NC}"

@@ -13,6 +13,6 @@ curl --cookie "\$sid" "\${ARGS[@]}" \${URL}/api/v2/torrents/add
 EOF
   else
     cat <<EOF >> ${install_path}/adder.sh
-curl --data "urls=\${TORRENT}" \${URL}/api/v2/torrents/add
+curl "\${ARGS[@]}" \${URL}/api/v2/torrents/add
 EOF
   fi

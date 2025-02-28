@@ -1,16 +1,33 @@
+
+cat <<EOF >> ${install_path}/adder.sh
+if [[ \$TORRENT == *.torrent ]]; then
+  TORRENT=\$(base64 -w 0 "\$TORRENT")
+  torrent_data="{
+               \"method\":\"torrent-add\",
+               \"arguments\":{\"metainfo\":\"\${TORRENT}\"}
+               }"
+
+else
+  torrent_data="{
+               \"method\":\"torrent-add\",
+               \"arguments\":{\"filename\":\"\${TORRENT}\"}
+               }"
+fi
+EOF
+
   if [ ! -z "$username" ] && [ ! -z "$password" ] ; then
     cat <<EOF >> ${install_path}/adder.sh
-sid=\$(curl --silent --anyauth --user \$USER:\$PASSWORD "\$URL/transmission/rpc" | sed 's/.*<code>//g;s/<\/code>.*//g')
-curl --silent --anyauth --user \$USER:\$PASSWORD --header "\$sid" "\$URL/transmission/rpc" --data "{\"method\":\"torrent-add\",\"arguments\":{\"filename\":\"\${TORRENT}\"}}"
+sid=\$(curl --silent "\${ARGS[@]}" --anyauth --user \$USER:\$PASSWORD "\$URL/transmission/rpc" | sed 's/.*<code>//g;s/<\/code>.*//g')
+curl --silent "\${ARGS[@]}" --anyauth --user \$USER:\$PASSWORD --header "\$sid" "\$URL/transmission/rpc" --data "\$torrent_data"
 EOF
   elif [ -z "$username" ] && [ ! -z "$password" ] ; then
     cat <<EOF >> ${install_path}/adder.sh
-sid=\$(curl --silent --anyauth --user ":\$PASSWORD" "\$URL/transmission/rpc" | sed 's/.*<code>//g;s/<\/code>.*//g')
-curl --silent --anyauth --user ":\$PASSWORD" --header "\$sid" "\$URL/transmission/rpc" --data "{\"method\":\"torrent-add\",\"arguments\":{\"filename\":\"\${TORRENT}\"}}"
+sid=\$(curl --silent "\${ARGS[@]}" --anyauth --user ":\$PASSWORD" "\$URL/transmission/rpc" | sed 's/.*<code>//g;s/<\/code>.*//g')
+curl --silent "\${ARGS[@]}" --anyauth --user ":\$PASSWORD" --header "\$sid" "\$URL/transmission/rpc" --data "\$torrent_data"
 EOF
   else
     cat <<EOF >> ${install_path}/adder.sh
-sid=\$(curl --silent "\$URL/transmission/rpc" | sed 's/.*<code>//g;s/<\/code>.*//g')
-curl --silent --header "\$sid" "\$URL/transmission/rpc" --data "{\"method\":\"torrent-add\",\"arguments\":{\"filename\":\"\${TORRENT}\"}}"
+sid=\$(curl --silent "\${ARGS[@]}" "\$URL/transmission/rpc" | sed 's/.*<code>//g;s/<\/code>.*//g')
+curl --silent "\${ARGS[@]}" --header "\$sid" "\$URL/transmission/rpc" --data "\$torrent_data"
 EOF
   fi
