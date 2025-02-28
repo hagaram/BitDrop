@@ -59,7 +59,7 @@ Name=${app_name}
 Type=Application
 Exec=${install_path}/adder.sh %u
 NoDisplay=true
-MimeType=x-scheme-handler/magnet;
+MimeType=x-scheme-handler/magnet;application/x-bittorrent;x-scheme-handler/x-bittorrent;
 Terminal=false
 EOF
 }
@@ -68,6 +68,8 @@ EOF
 configure_linux_magnet_association () {
   printf "%bAssigning association with magnet links%b\n" "${BOLD}" "${NC}"
   xdg-mime default "${app_name}".desktop x-scheme-handler/magnet
+  xdg-mime default "${app_name}".desktop x-scheme-handler/x-bittorrent
+  xdg-mime default "${app_name}".desktop application/x-bittorrent
 }
 
 
@@ -116,6 +118,33 @@ configure_torrent_client () {
   printf "%bInput password:%b\n" "${BOLD}" "${NC}"
   read -s password
 
+
+  export PS3="Choose number: "
+  printf "%bDo you want to use Basic Auth in front of the torrent client?%b:\n" "${BOLD}" "${NC}"
+  select basic_auth in yes no
+  do
+    break
+  done
+
+  if [ "$basic_auth" == "yes" ]; then
+    export PS3="Choose number: "
+    printf "%bDo you want to use the same credentials for Basic Auth as you do for torrent client?%b:\n" "${BOLD}" "${NC}"
+    select basic_auth_copy_credentials in yes no
+    do
+      break
+    done
+  fi
+  
+  if [ "$basic_auth_copy_credentials" == "yes" ]; then
+    basicauth_username=$username
+    basicauth_password=$password
+  else
+    printf "\n%bSpecify username for Basic Auth%b:\n" "${BOLD}" "${NC}"
+    read basicauth_username
+    printf "\n%bSpecify password for Basic Auth%b:\n" "${BOLD}" "${NC}"
+    read -s basicauth_password
+  fi
+
   printf "\n%bCreating adder script in %s/adder.sh%b\n" "${BOLD}" "${install_path}" "${NC}"
 
   mkdir -p "${install_path}"
@@ -127,7 +156,10 @@ URL=$url
 USER=$username
 PASSWORD=$password
 EOF
-
+  
+  if [ $basic_auth == "yes" ];then
+    source templates/basic_auth
+  fi
 
   source templates/"${client}"
   chmod +x "${install_path}"/adder.sh
