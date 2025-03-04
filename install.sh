@@ -4,7 +4,7 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 BOLD='\033[1m' # Bold
-PLATFORM=$(uname)
+PLATFORM=$(uname | tr '[:upper:]' '[:lower:]')
 DEFAULT_APP_NAME="Remote_magnet_handler"
 COMPATIBLE_CLIENTS="qbittorrent transmission deluge"
 
@@ -12,7 +12,7 @@ COMPATIBLE_CLIENTS="qbittorrent transmission deluge"
 ####FC START
 
 
-macos_check_reqs () {
+darwin_check_reqs () {
   command -v brew &>/dev/null
   if [ $? -eq 1 ]; then
       printf "Please, install brew command and re-run the script, exiting...\n"
@@ -59,7 +59,7 @@ Name=${app_name}
 Type=Application
 Exec=${install_path}/adder.sh %u
 NoDisplay=true
-MimeType=x-scheme-handler/magnet;application/x-bittorrent;x-scheme-handler/x-bittorrent;
+MimeType=x-scheme-handler/magnet;x-scheme-handler/x-bittorrent;
 Terminal=false
 EOF
 }
@@ -69,16 +69,20 @@ configure_linux_magnet_association () {
   printf "%bAssigning association with magnet links%b\n" "${BOLD}" "${NC}"
   xdg-mime default "${app_name}".desktop x-scheme-handler/magnet
   xdg-mime default "${app_name}".desktop x-scheme-handler/x-bittorrent
-  xdg-mime default "${app_name}".desktop application/x-bittorrent
 }
 
 
-create_macos_middleware_app () {
+create_darwin_middleware_app () {
   printf "%bCreating %s.app%b" "${BOLD}" "${app_name}" "${NC}"
   cat <<EOF > ${install_path}/${app_name}.scpt
 on open location this_URL
-	do shell script "${install_path}/adder.sh '" & this_URL & "'"
+    do shell script "${install_path}/adder.sh '" & this_URL & "'"
 end open location
+
+on open fileList
+    set filePath to POSIX path of (item 1 of fileList)
+    do shell script "${install_path}/adder.sh '" & filePath & "'"
+end open
 EOF
 
   osacompile -o /Applications/"${app_name}".app "${install_path}/${app_name}".scpt
@@ -86,9 +90,10 @@ EOF
 }
 
 
-configure_macos_magnet_association () {
+configure_darwin_magnet_association () {
   printf "\n%bAssigning association with magnet links%b" "${BOLD}" "${NC}"
   duti -s com.apple.ScriptEditor.id.Remote-magnet-handler magnet
+  duti -s com.apple.ScriptEditor.id.Remote-magnet-handler .torrent
 }
 
 configure_torrent_client () {
@@ -164,33 +169,15 @@ EOF
   source templates/"${client}"
   chmod +x "${install_path}"/adder.sh
 
-
 }
 ####FC END
 
-
 main () {
-  case $PLATFORM in
-    Darwin)
-      macos_check_reqs
-      ;;
-    Linux)
-      linux_check_reqs
-    ;;
-  esac
-  
+
+  "${PLATFORM}_check_reqs"
   configure_torrent_client
-  
-  case $PLATFORM in
-    Darwin)
-      create_macos_middleware_app
-      configure_macos_magnet_association
-      ;;
-    Linux)
-      create_linux_middleware_app
-      configure_linux_magnet_association
-      ;;
-  esac
+  "create_${PLATFORM}_middleware_app"
+  "configure_${PLATFORM}_association"
   
   printf "\n%bDONE%b\n" "${GREEN}" "${NC}"
 }
