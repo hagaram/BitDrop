@@ -65,7 +65,7 @@ EOF
 }
 
 
-configure_linux_magnet_association () {
+configure_linux_file_association () {
   printf "%bAssigning association with magnet links%b\n" "${BOLD}" "${NC}"
   xdg-mime default "${app_name}".desktop x-scheme-handler/magnet
   xdg-mime default "${app_name}".desktop x-scheme-handler/x-bittorrent
@@ -90,7 +90,7 @@ EOF
 }
 
 
-configure_darwin_magnet_association () {
+configure_darwin_file_association () {
   printf "\n%bAssigning association with magnet links%b" "${BOLD}" "${NC}"
   duti -s com.apple.ScriptEditor.id.Remote-magnet-handler magnet
   duti -s com.apple.ScriptEditor.id.Remote-magnet-handler .torrent
@@ -177,7 +177,7 @@ main () {
   "${PLATFORM}_check_reqs"
   configure_torrent_client
   "create_${PLATFORM}_middleware_app"
-  "configure_${PLATFORM}_association"
+  "configure_${PLATFORM}_file_association"
   
   printf "\n%bDONE%b\n" "${GREEN}" "${NC}"
 }
