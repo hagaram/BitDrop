@@ -1,0 +1,15 @@
+if [ $basic_auth_copy_credentials == "yes" ]; then
+  cat <<EOF >> ${install_path}/adder.sh
+BASIC_AUTH=\$(echo -ne "\$USER:\$PASSWORD" | base64 $BASE64_ARGS)
+EOF
+else
+  cat <<EOF >> ${install_path}/adder.sh
+BASIC_AUTH_USERNAME="$basicauth_username"
+BASIC_AUTH_PASSWORD="$basicauth_password"
+BASIC_AUTH=\$(echo -ne "\$BASIC_AUTH_USERNAME:\$BASIC_AUTH_PASSWORD" | base64 $BASE64_ARGS)
+EOF
+fi
+cat <<EOF >> ${install_path}/adder.sh
+ARGS+=(--header "Authorization: Basic \$BASIC_AUTH")
+
+EOF

@@ -1,11 +1,25 @@
+
   if [ ! -z "$username" ] && [ ! -z "$password" ] ; then
     cat <<EOF >> ${install_path}/adder.sh
-sid=\$(curl -s -i --header "Referer: \$URL" --data "username=\${USER}&password=\${PASSWORD}" \${URL}/api/v2/auth/login | sed -nE "s/.*(SID=.*); HttpOnly.*/\1/p")
-curl --cookie "\$sid" --data "urls=\${TORRENT}" \${URL}/api/v2/torrents/add
-curl \${URL}/logout --cookie "\$sid"
+sid=\$(curl -s -i  "\${ARGS[@]}" --header "Referer: \$URL" --data "username=\${USER}&password=\${PASSWORD}" \${URL}/api/v2/auth/login | sed -nE "s/.*(SID=.*); HttpOnly.*/\1/p")
+
+if [[ \$TORRENT == *.torrent ]]; then
+
+    #Kinda meh, but it works -> its to avoid issues with special characters in the filename, which occured in testing
+    TORRENT_SANITIZED=\$(echo "\$TORRENT" | sed 's/[^a-zA-Z0-9_-]//g')
+    cp "\$TORRENT" "/tmp/\$TORRENT_SANITIZED"
+    TORRENT="/tmp/\$TORRENT_SANITIZED"
+    trap 'rm -f \$TORRENT' EXIT
+
+    ARGS+=(-F "torrents=@\${TORRENT}")
+else
+    ARGS+=(--data-urlencode "urls=\${TORRENT}")
+fi
+
+curl --cookie "\$sid" "\${ARGS[@]}" \${URL}/api/v2/torrents/add
 EOF
   else
     cat <<EOF >> ${install_path}/adder.sh
-curl --data "urls=\${TORRENT}" \${URL}/api/v2/torrents/add
+curl "\${ARGS[@]}" \${URL}/api/v2/torrents/add
 EOF
   fi

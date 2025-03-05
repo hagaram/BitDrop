@@ -4,15 +4,19 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 BOLD='\033[1m' # Bold
-PLATFORM=$(uname)
-DEFAULT_APP_NAME="Remote_magnet_handler"
+PLATFORM=$(uname | tr '[:upper:]' '[:lower:]')
+APP_NAME="BitDrop"
 COMPATIBLE_CLIENTS="qbittorrent transmission deluge"
 
+if [ $PLATFORM == "darwin" ]; then
+  BASE64_ARGS="-b 0"
+else
+  BASE64_ARGS="-w 0"
+fi
 
 ####FC START
 
-
-macos_check_reqs () {
+darwin_check_reqs () {
   command -v brew &>/dev/null
   if [ $? -eq 1 ]; then
       printf "Please, install brew command and re-run the script, exiting...\n"
@@ -51,42 +55,63 @@ linux_check_reqs() {
 
 
 create_linux_middleware_app () {
-  printf "%bCreating %s.desktop entry%b\n" "${BOLD}" "${app_name}" "${NC}"
+  printf "%bCreating %s.desktop entry%b\n" "${BOLD}" "${APP_NAME}" "${NC}"
   mkdir -p "${HOME}/.local/share/applications/"
-  cat <<EOF > ${HOME}/.local/share/applications/${app_name}.desktop
+  cat <<EOF > ${HOME}/.local/share/applications/${APP_NAME}.desktop
 [Desktop Entry]
-Name=${app_name}
+Name=${APP_NAME}
 Type=Application
 Exec=${install_path}/adder.sh %u
 NoDisplay=true
-MimeType=x-scheme-handler/magnet;
+MimeType=x-scheme-handler/magnet;x-scheme-handler/x-bittorrent;application/x-bittorrent;
 Terminal=false
 EOF
+
 }
 
 
-configure_linux_magnet_association () {
-  printf "%bAssigning association with magnet links%b\n" "${BOLD}" "${NC}"
-  xdg-mime default "${app_name}".desktop x-scheme-handler/magnet
+configure_linux_file_association () {
+  printf "%bAssigning association with magnet links and torrent files%b\n" "${BOLD}" "${NC}"
+  xdg-mime default "${APP_NAME}".desktop x-scheme-handler/magnet
+  xdg-mime default "${APP_NAME}".desktop x-scheme-handler/x-bittorrent
+  xdg-mime default "${APP_NAME}".desktop application/x-bittorrent
 }
 
 
-create_macos_middleware_app () {
-  printf "%bCreating %s.app%b" "${BOLD}" "${app_name}" "${NC}"
-  cat <<EOF > ${install_path}/${app_name}.scpt
+create_darwin_middleware_app () {
+  printf "%bCreating %s.app%b" "${BOLD}" "${APP_NAME}" "${NC}"
+  cat <<EOF > ${install_path}/${APP_NAME}.scpt
 on open location this_URL
-	do shell script "${install_path}/adder.sh '" & this_URL & "'"
+    do shell script "${install_path}/adder.sh '" & this_URL & "'"
 end open location
+
+on open fileList
+    set filePath to POSIX path of (item 1 of fileList)
+    do shell script "${install_path}/adder.sh '" & filePath & "'"
+end open
 EOF
 
-  osacompile -o /Applications/"${app_name}".app "${install_path}/${app_name}".scpt
-  perl -i -pe 's/(^\s+<key>LSMinimumSystemVersionByArchitecture<\/key>)/\t<key>CFBundleIdentifier<\/key>\n\t<string>com.apple.ScriptEditor.id.Remote-magnet-handler<\/string>\n$1/'  /Applications/${app_name}.app/Contents/Info.plist
+  app_path="/Applications/${APP_NAME}.app"
+  plist="${app_path}/Contents/Info.plist"
+
+  #Always "reinstall" the app
+  [ -d "${app_path}" ] && rm -rf "${app_path}"
+  osacompile -o /Applications/"${APP_NAME}".app "${install_path}/${APP_NAME}".scpt
+  /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.apple.ScriptEditor.id.BitDrop" "${plist}"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleDocumentTypes:0:CFBundleTypeExtensions:0 torrent" "${plist}"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "${plist}"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "${plist}"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleTypeRole string Viewer" "${plist}"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string BitTorrent Magnet URL" "${plist}"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "${plist}"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string magnet" "${plist}"
+  /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -R -f ${app_path}
 }
 
-
-configure_macos_magnet_association () {
-  printf "\n%bAssigning association with magnet links%b" "${BOLD}" "${NC}"
-  duti -s com.apple.ScriptEditor.id.Remote-magnet-handler magnet
+configure_darwin_file_association () {
+  printf "\n%bAssigning association with magnet links and torrent files%b" "${BOLD}" "${NC}"
+  duti -s com.apple.ScriptEditor.id.BitDrop magnet all
+  duti -s com.apple.ScriptEditor.id.BitDrop .torrent all
 }
 
 configure_torrent_client () {
@@ -98,14 +123,9 @@ configure_torrent_client () {
     break
   done
 
-
-  printf "\n\n%bSpecify application name you wish to use, leave empty to use default %b(defaults to %s)%b:\n" "${BOLD}" "${GREEN}" "${DEFAULT_APP_NAME}" "${NC}"
-  read app_name
-  app_name=${app_name:-"${DEFAULT_APP_NAME}"}
-
-  printf "\n\n%bSpecify installation path where you want scripts to be created, leave empty to use default %b(defaults to %s/software/%s)%b:\n"  "${BOLD}" "${GREEN}" "${HOME}" "${app_name}" "${NC}"
+  printf "\n\n%bSpecify installation path where you want scripts to be created, leave empty to use default %b(defaults to %s/software/%s)%b:\n"  "${BOLD}" "${GREEN}" "${HOME}/.local/bin/" "${APP_NAME}" "${NC}"
   read install_path
-  install_path=${install_path:-"${HOME}/software/${app_name}"}
+  install_path=${install_path:-"${HOME}/.local/bin/${APP_NAME}"}
 
   printf "\n%bSpecify URL of your remote qBittorrent instance %b(example: http(s)://192.168.1.200:8080)%b:\n" "${BOLD}" "${GREEN}" "${NC}"
   read url
@@ -115,6 +135,33 @@ configure_torrent_client () {
   read username
   printf "%bInput password:%b\n" "${BOLD}" "${NC}"
   read -s password
+
+
+  export PS3="Choose number: "
+  printf "%bDo you want to use Basic Auth in front of the torrent client?%b:\n" "${BOLD}" "${NC}"
+  select basic_auth in yes no
+  do
+    break
+  done
+
+  if [ "$basic_auth" == "yes" ]; then
+    export PS3="Choose number: "
+    printf "%bDo you want to use the same credentials for Basic Auth as you do for torrent client?%b:\n" "${BOLD}" "${NC}"
+    select basic_auth_copy_credentials in yes no
+    do
+      break
+    done
+  fi
+  
+  if [ "$basic_auth" == "yes" ] && [ "$basic_auth_copy_credentials" == "no" ]; then
+    printf "\n%bSpecify username for Basic Auth%b:\n" "${BOLD}" "${NC}"
+    read basicauth_username
+    printf "\n%bSpecify password for Basic Auth%b:\n" "${BOLD}" "${NC}"
+    read -s basicauth_password
+  else
+    basicauth_username=$username
+    basicauth_password=$password
+  fi
 
   printf "\n%bCreating adder script in %s/adder.sh%b\n" "${BOLD}" "${install_path}" "${NC}"
 
@@ -127,38 +174,23 @@ URL=$url
 USER=$username
 PASSWORD=$password
 EOF
-
+  
+  if [ $basic_auth == "yes" ];then
+    source templates/basic_auth
+  fi
 
   source templates/"${client}"
   chmod +x "${install_path}"/adder.sh
 
-
 }
 ####FC END
 
-
 main () {
-  case $PLATFORM in
-    Darwin)
-      macos_check_reqs
-      ;;
-    Linux)
-      linux_check_reqs
-    ;;
-  esac
-  
+
+  "${PLATFORM}_check_reqs"
   configure_torrent_client
-  
-  case $PLATFORM in
-    Darwin)
-      create_macos_middleware_app
-      configure_macos_magnet_association
-      ;;
-    Linux)
-      create_linux_middleware_app
-      configure_linux_magnet_association
-      ;;
-  esac
+  "create_${PLATFORM}_middleware_app"
+  "configure_${PLATFORM}_file_association"
   
   printf "\n%bDONE%b\n" "${GREEN}" "${NC}"
 }
