@@ -1,7 +1,7 @@
 
 cat <<EOF >> ${install_path}/adder.sh
 if [[ \$TORRENT == *.torrent ]]; then
-  TORRENT=\$(base64 -w 0 "\$TORRENT")
+  TORRENT=\$(base64 $BASE64_ARGS "\$TORRENT")
   torrent_data="{
                \"method\":\"torrent-add\",
                \"arguments\":{\"metainfo\":\"\${TORRENT}\"}

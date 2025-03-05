@@ -4,7 +4,7 @@
 
 if [[ \$TORRENT == *.torrent ]]; then
   torrent_name="\$(basename \$TORRENT)"
-  TORRENT=\$(base64 -w 0 "\$TORRENT")
+  TORRENT=\$(base64 $BASE64_ARGS "\$TORRENT")
   torrent_data="{
           \"method\":\"core.add_torrent_file\",
           \"params\": [\"\$torrent_name\", \"\$TORRENT\", {}],

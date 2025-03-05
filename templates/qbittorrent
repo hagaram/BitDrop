@@ -4,6 +4,13 @@
 sid=\$(curl -s -i  "\${ARGS[@]}" --header "Referer: \$URL" --data "username=\${USER}&password=\${PASSWORD}" \${URL}/api/v2/auth/login | sed -nE "s/.*(SID=.*); HttpOnly.*/\1/p")
 
 if [[ \$TORRENT == *.torrent ]]; then
+
+    #Kinda meh, but it works -> its to avoid issues with special characters in the filename, which occured in testing
+    TORRENT_SANITIZED=\$(echo "\$TORRENT" | sed 's/[^a-zA-Z0-9_-]//g')
+    cp "\$TORRENT" "/tmp/\$TORRENT_SANITIZED"
+    TORRENT="/tmp/\$TORRENT_SANITIZED"
+    trap 'rm -f \$TORRENT' EXIT
+
     ARGS+=(-F "torrents=@\${TORRENT}")
 else
     ARGS+=(--data-urlencode "urls=\${TORRENT}")

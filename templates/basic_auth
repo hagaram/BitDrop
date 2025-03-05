@@ -1,9 +1,3 @@
-if [ $PLATFORM == "darwin" ]; then
-  BASE64_ARGS="-b 0"
-else
-  BASE64_ARGS="--wrap 0"
-fi
-
 if [ $basic_auth_copy_credentials == "yes" ]; then
   cat <<EOF >> ${install_path}/adder.sh
 BASIC_AUTH=\$(echo -ne "\$USER:\$PASSWORD" | base64 $BASE64_ARGS)
