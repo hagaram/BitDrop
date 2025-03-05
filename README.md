@@ -44,8 +44,6 @@ Simple bash script wrapped as a "application" for Linux and Macos, capable of ad
 
 ## Tested on:
 
-- MacOS Catalina
-- MacOS BigSur
 - MacOs Ventura
 - Arch with KDE
 - Debian 10 with XFCE ( should work on other distros and DEs)

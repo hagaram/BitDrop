@@ -91,8 +91,21 @@ on open fileList
 end open
 EOF
 
+  app_path="/Applications/${APP_NAME}.app"
+  plist="${app_path}/Contents/Info.plist"
+
+  #Always "reinstall" the app
+  [ -d "${app_path}" ] && rm -rf "${app_path}"
   osacompile -o /Applications/"${APP_NAME}".app "${install_path}/${APP_NAME}".scpt
-  perl -i -pe 's/(^\s+<key>LSMinimumSystemVersionByArchitecture<\/key>)/\t<key>CFBundleIdentifier<\/key>\n\t<string>com.apple.ScriptEditor.id.BitDrop<\/string>\n$1/'  /Applications/${APP_NAME}.app/Contents/Info.plist
+  /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.apple.ScriptEditor.id.BitDrop" "${plist}"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleDocumentTypes:0:CFBundleTypeExtensions:0 torrent" "${plist}"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "${plist}"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "${plist}"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleTypeRole string Viewer" "${plist}"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string BitTorrent Magnet URL" "${plist}"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "${plist}"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string magnet" "${plist}"
+  /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -R -f ${app_path}
 }
 
 configure_darwin_file_association () {
@@ -110,7 +123,7 @@ configure_torrent_client () {
     break
   done
 
-  printf "\n\n%bSpecify installation path where you want scripts to be created, leave empty to use default %b(defaults to %s/software/%s)%b:\n"  "${BOLD}" "${GREEN}" "${HOME}" "${APP_NAME}" "${NC}"
+  printf "\n\n%bSpecify installation path where you want scripts to be created, leave empty to use default %b(defaults to %s/software/%s)%b:\n"  "${BOLD}" "${GREEN}" "${HOME}/.local/bin/" "${APP_NAME}" "${NC}"
   read install_path
   install_path=${install_path:-"${HOME}/.local/bin/${APP_NAME}"}
 
