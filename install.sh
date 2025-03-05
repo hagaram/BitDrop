@@ -92,13 +92,13 @@ end open
 EOF
 
   osacompile -o /Applications/"${APP_NAME}".app "${install_path}/${APP_NAME}".scpt
-  perl -i -pe 's/(^\s+<key>LSMinimumSystemVersionByArchitecture<\/key>)/\t<key>CFBundleIdentifier<\/key>\n\t<string>com.apple.ScriptEditor.id.Remote-magnet-handler<\/string>\n$1/'  /Applications/${APP_NAME}.app/Contents/Info.plist
+  perl -i -pe 's/(^\s+<key>LSMinimumSystemVersionByArchitecture<\/key>)/\t<key>CFBundleIdentifier<\/key>\n\t<string>com.apple.ScriptEditor.id.BitDrop<\/string>\n$1/'  /Applications/${APP_NAME}.app/Contents/Info.plist
 }
 
 configure_darwin_file_association () {
   printf "\n%bAssigning association with magnet links and torrent files%b" "${BOLD}" "${NC}"
-  duti -s com.apple.ScriptEditor.id.Remote-magnet-handler magnet all
-  duti -s com.apple.ScriptEditor.id.Remote-magnet-handler .torrent all
+  duti -s com.apple.ScriptEditor.id.BitDrop magnet all
+  duti -s com.apple.ScriptEditor.id.BitDrop .torrent all
 }
 
 configure_torrent_client () {
