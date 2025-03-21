@@ -5,7 +5,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 BOLD='\033[1m' # Bold
 PLATFORM=$(uname | tr '[:upper:]' '[:lower:]')
-APP_NAME="BitDrop"
+APP_NAME="TorrentDrop"
 COMPATIBLE_CLIENTS="qbittorrent transmission deluge"
 
 if [ $PLATFORM == "darwin" ]; then
@@ -97,7 +97,7 @@ EOF
   #Always "reinstall" the app
   [ -d "${app_path}" ] && rm -rf "${app_path}"
   osacompile -o /Applications/"${APP_NAME}".app "${install_path}/${APP_NAME}".scpt
-  /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.apple.ScriptEditor.id.BitDrop" "${plist}"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.apple.ScriptEditor.id.TorrentDrop" "${plist}"
   /usr/libexec/PlistBuddy -c "Set :CFBundleDocumentTypes:0:CFBundleTypeExtensions:0 torrent" "${plist}"
   /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "${plist}"
   /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "${plist}"
@@ -110,8 +110,8 @@ EOF
 
 configure_darwin_file_association () {
   printf "\n%bAssigning association with magnet links and torrent files%b" "${BOLD}" "${NC}"
-  duti -s com.apple.ScriptEditor.id.BitDrop magnet all
-  duti -s com.apple.ScriptEditor.id.BitDrop .torrent all
+  duti -s com.apple.ScriptEditor.id.TorrentDrop magnet all
+  duti -s com.apple.ScriptEditor.id.TorrentDrop .torrent all
 }
 
 configure_torrent_client () {
